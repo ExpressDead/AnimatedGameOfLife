@@ -28,7 +28,7 @@ The initial pattern constitutes the seed of the system. The first generation is 
 *Notes:* 
 
 - The rules outlined where [taken from this wikipedia article](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life).
-- I take security series and that comes with the realization that there is always the possibility of missing something, or the tech changing. If you find a security vulnerability with the code or published game please see the [security policy](security.md) for communicating it with me. 
+- I take security series and that comes with the realization that there is always the possibility of missing something, or the tech changing. If you find a security vulnerability with the code or published game please see the [security policy](/SECURITY.md) for communicating it with me. 
 
 ## Playing the Game
 
