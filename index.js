@@ -12,7 +12,9 @@ window.addEventListener('load', e => {
             this.spriteWidth = 900;
             this.spriteHeigth = 600;
             this.image = document.getElementById('robot');
+            this.neighbours = 0;
             this.frame = 0;
+            this.markedForDeletion = false;
         }
         draw() {
             ctx.drawImage(this.image, this.frame * this.spriteWidth, 0, this.spriteWidth, this.spriteHeigth, this.x, this.y, 20, 20);
@@ -29,12 +31,29 @@ window.addEventListener('load', e => {
             this.stepx = stepx;
             this.stepy = stepy;
             this.robots = [];
+            this.timer = 0;
+            this.interval = 50;
+            this.running = false;
 
             //event listeners for the game
             canvas.addEventListener('click', e => {
                 let x = e.offsetX - (e.offsetX % 20);
                 let y = e.offsetY - (e.offsetY % 20);
-                this.robots.push(new Robot(x, y));
+                if(this.robots.filter(robot => robot.x == x && robot.y == y).length == 0) {
+                    this.robots.push(new Robot(x, y));
+                    this.ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    this.draw();
+                }
+            });
+            document.getElementById('start').addEventListener('click', e => {
+                this.running = true;
+                this.start(ctx);
+            });
+            document.getElementById('stop').addEventListener('click', e => {
+                this.stop();
+            });
+            document.getElementById('clear').addEventListener('click', e => {
+                this.clear();
             });
         }
         draw() {
@@ -60,27 +79,88 @@ window.addEventListener('load', e => {
                 robot.update();
             });
         }
-        init() {
-            // adding random seed robots to the game for testing & development
+        runGeneration() {
+            // run the generation of robots
+            if(this.timer > this.interval) {
+                this.robots.forEach(robot => {
+                    this.findNeighbours(robot);
+                    if(robot.neighbours < 2 || robot.neighbours > 3) {
+                        robot.markedForDeletion = true;
+                    }
+                });
+                this.robots = this.robots.filter(robot => !robot.markedForDeletion);
+                this.timer = 0;
+            } else {
+                this.timer++;
+            }
+        }
+        findNeighbours(robot) {
+            // find the neighbours of each robot
+            let rx = robot.x;
+            let ry = robot.y;
+            this.robots.forEach(r => {
+                if(r.x == rx + this.stepx && r.y == ry) {
+                    robot.neighbours++;
+                } else if (r.x == rx - this.stepx && r.y == ry )
+                    robot.neighbours++;
+                else if (r.x == rx && r.y == ry + this.stepy)
+                    robot.neighbours++;
+                else if (r.x == rx && r.y == ry - this.stepy)
+                    robot.neighbours++;
+                else if (r.x == rx + this.stepx && r.y == ry + this.stepy)
+                    robot.neighbours++;
+                else if (r.x == rx - this.stepx && r.y == ry - this.stepy)
+                    robot.neighbours++;
+                else if (r.x == rx + this.stepx && r.y == ry - this.stepy)
+                    robot.neighbours++;
+                else if (r.x == rx - this.stepx && r.y == ry + this.stepy)
+                    robot.neighbours++;
+            });
+        }
+        randomPopulation() {
+            // add random robots to the game
             for(let i = 1; i < 20; i++) {
                 let x = Math.floor(Math.random() * 50) * 20;
                 let y = Math.floor(Math.random() * 25) * 20;
                 this.robots.push(new Robot(x, y));
             };
         }
+        init() {
+        }
+        start(ctx) {
+            if(this.robots.length == 0) {
+                 this.randomPopulation();
+            }
+            this.running = true;
+            const animate = () => {
+                this.runGeneration();
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                this.draw();
+                if(this.running) {
+                    requestAnimationFrame(animate);
+                }
+            }
+            animate();
+        }
+        stop() {
+            this.running = false;
+        }
+        clear() {
+            this.stop();
+            this.robots = [];
+        }
     }
 
     const game = new Game(ctx, 'lightgray', 20, 20);
     game.init();
 
-    function animate(){
+    let lastTime = 0;
+    function animate(timeStamp){
+        const deltaTime = timeStamp - lastTime;
+        lastTime = timeStamp;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         game.draw();
-
-        requestAnimationFrame(animate);
     }
 
-    animate();
-
-    
+    animate(0);
 });
