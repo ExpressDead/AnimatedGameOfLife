@@ -87,6 +87,9 @@ window.addEventListener('load', e => {
                     if(robot.neighbours < 2 || robot.neighbours > 3) {
                         robot.markedForDeletion = true;
                     }
+                    if(robot.neighbours == 0) {
+                        robot.markedForDeletion = true;
+                    }
                 });
                 this.robots = this.robots.filter(robot => !robot.markedForDeletion);
                 this.timer = 0;
@@ -137,6 +140,7 @@ window.addEventListener('load', e => {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 this.draw();
                 if(this.running) {
+                    document.getElementById('currentState').innerHTML = 'Running...';
                     requestAnimationFrame(animate);
                 }
             }
@@ -144,6 +148,7 @@ window.addEventListener('load', e => {
         }
         stop() {
             this.running = false;
+            document.getElementById('currentState').innerHTML = 'Waiting...';
         }
         clear() {
             this.stop();
@@ -159,6 +164,7 @@ window.addEventListener('load', e => {
         const deltaTime = timeStamp - lastTime;
         lastTime = timeStamp;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        document.getElementById('currentState').innerHTML = 'Waiting...';
         game.draw();
     }
 

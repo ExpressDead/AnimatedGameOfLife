@@ -21,3 +21,11 @@
     width: 1020px;
     height: 520px;
 }
+
+
+#currentState, .state-label {
+    position: relative;
+    font-size: 20px;
+    text-align: 'center';
+    font-family: 'Bangers', cursive;
+}
