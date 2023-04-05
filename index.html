@@ -11,6 +11,17 @@
         <link rel="stylesheet" href="index.css" />
     </head>
     <body>
+        <div class="slider-container">
+            <label for="cell-size">Cell Size</label>
+            <input type="range" min="10" max="50" value="10" step="10" class="slider" id="cell-size">
+            <div class="slider-labels">
+                <span class="slider-label">10</span>
+                <span class="slider-label">20</span>
+                <span class="slider-label">30</span>
+                <span class="slider-label">40</span>
+                <span class="slider-label">50</span>
+            </div>
+        </div>
         <canvas id="canvas1"></canvas>
         <img id="robot" src="images/robot.png" />
 

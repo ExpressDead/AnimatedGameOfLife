@@ -29,13 +29,18 @@ window.addEventListener('load', e => {
             this.stepx = stepx;
             this.stepy = stepy;
             this.robots = [];
+            this.slider = document.getElementById('cell-size');
 
             //event listeners for the game
             canvas.addEventListener('click', e => {
-                let x = e.offsetX - (e.offsetX % 20);
-                let y = e.offsetY - (e.offsetY % 20);
+                let x = e.offsetX - (e.offsetX % this.stepx);
+                let y = e.offsetY - (e.offsetY % this.stepy);
                 this.robots.push(new Robot(x, y));
             });
+            this.slider.addEventListener('change', e => {
+                this.stepx = e.target.value;
+                this.stepy = e.target.value;
+            }); 
         }
         draw() {
             // draw the grid for the game
@@ -63,8 +68,8 @@ window.addEventListener('load', e => {
         init() {
             // adding random seed robots to the game for testing & development
             for(let i = 1; i < 20; i++) {
-                let x = Math.floor(Math.random() * 50) * 20;
-                let y = Math.floor(Math.random() * 25) * 20;
+                let x = Math.floor(Math.random() * 50) * this.stepx;
+                let y = Math.floor(Math.random() * 25) * this.stepy;
                 this.robots.push(new Robot(x, y));
             };
         }
