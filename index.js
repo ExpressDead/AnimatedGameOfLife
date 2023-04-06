@@ -6,7 +6,8 @@ window.addEventListener('load', e => {
     ctx = canvas.getContext('2d');
 
     class Robot {
-        constructor(x, y) {
+        constructor(game, x, y) {
+            this.game = game;
             this.x = x;
             this.y = y;
             this.spriteWidth = 900;
@@ -17,19 +18,44 @@ window.addEventListener('load', e => {
             this.markedForDeletion = false;
         }
         draw() {
-            ctx.drawImage(this.image, this.frame * this.spriteWidth, 0, this.spriteWidth, this.spriteHeigth, this.x, this.y, 20, 20);
+            ctx.drawImage(this.image, this.frame * this.spriteWidth, 0, this.spriteWidth, this.spriteHeigth, this.x, this.y, this.game.stepx, this.game.stepy);
         }
         update() {
             this.frame < 20 ? this.frame++ : this.frame = 0;
         }
     }
 
+    class Cell {
+        constructor(game, x, y) {
+            this.game = game;
+            this.x = x;
+            this.y = y;
+            this.width = this.game.stepx;
+            this.height = this.game.stepy;
+            this.color = 'lightgrey';
+            this.robot = null;
+        }
+        draw() {
+            ctx.save();
+            ctx.strokeStyle = this.color;
+            ctx.strokeWidth = 0.5;
+            ctx.strokeRect(this.x, this.y, this.width, this.height);
+            ctx.restore();
+        }
+        addRobot(robot) {
+            this.robot = robot;
+        }
+    }
+
     class Game {
         constructor(ctx, color, stepx, stepy) {
             this.ctx = ctx;
+            this.width = ctx.canvas.width;
+            this.height = ctx.canvas.height;
             this.color = color;
             this.stepx = stepx;
             this.stepy = stepy;
+            this.cells = [];
             this.robots = [];
             this.timer = 0;
             this.interval = 50;
@@ -37,10 +63,12 @@ window.addEventListener('load', e => {
 
             //event listeners for the game
             canvas.addEventListener('click', e => {
-                let x = e.offsetX - (e.offsetX % 20);
-                let y = e.offsetY - (e.offsetY % 20);
+                let x = e.offsetX - (e.offsetX % this.stepx);
+                let y = e.offsetY - (e.offsetY % this.stepy);
+                let cell = this.cells.filter(cell => cell.x == x && cell.y == y);
+                console.log(cell);
                 if(this.robots.filter(robot => robot.x == x && robot.y == y).length == 0) {
-                    this.robots.push(new Robot(x, y));
+                    this.robots.push(new Robot(this, x, y));
                     this.ctx.clearRect(0, 0, canvas.width, canvas.height);
                     this.draw();
                 }
@@ -58,6 +86,10 @@ window.addEventListener('load', e => {
         }
         draw() {
             // draw the grid for the game
+            this.cells.forEach(cell => {
+                cell.draw();
+            });
+            /*
             this.ctx.strokeStyle = this.color;
             this.ctx.lineWidth = 0.5;
             for (let i = this.stepx + 0.5; i < this.ctx.canvas.width; i += this.stepx) {
@@ -71,7 +103,7 @@ window.addEventListener('load', e => {
                 this.ctx.moveTo(0, i);
                 this.ctx.lineTo(this.ctx.canvas.width, i);
                 this.ctx.stroke();
-            }
+            }*/
 
             // draw the robots currently in the game
             this.robots.forEach(robot => {
@@ -123,12 +155,18 @@ window.addEventListener('load', e => {
         randomPopulation() {
             // add random robots to the game
             for(let i = 1; i < 20; i++) {
-                let x = Math.floor(Math.random() * 50) * 20;
-                let y = Math.floor(Math.random() * 25) * 20;
-                this.robots.push(new Robot(x, y));
+                let x = Math.floor(Math.random() * 50) * this.stepx;
+                let y = Math.floor(Math.random() * 25) * this.stepy;
+                this.robots.push(new Robot(this, x, y));
             };
         }
         init() {
+            // create the cells for the current canvas size
+            for(let i = 0; i < this.ctx.canvas.width; i += this.stepx) {
+                for(let j = 0; j < this.ctx.canvas.height; j += this.stepy) {
+                    this.cells.push(new Cell(this, i, j));
+                }
+            }
         }
         start(ctx) {
             if(this.robots.length == 0) {
@@ -156,7 +194,7 @@ window.addEventListener('load', e => {
         }
     }
 
-    const game = new Game(ctx, 'lightgray', 20, 20);
+    const game = new Game(ctx, 'lightgray', 100, 75);
     game.init();
 
     let lastTime = 0;
