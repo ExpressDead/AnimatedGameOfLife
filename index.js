@@ -4,21 +4,26 @@ window.addEventListener('load', e => {
     canvas.height = 520;
 
     ctx = canvas.getContext('2d');
+    
+    document.getElementById('currentState').innerHTML = 'Waiting...';
 
     class Robot {
-        constructor(game, x, y) {
-            this.game = game;
-            this.x = x;
-            this.y = y;
+        constructor(cell) {
+            this.cell = cell;
             this.spriteWidth = 900;
             this.spriteHeigth = 600;
             this.image = document.getElementById('robot');
-            this.neighbours = 0;
             this.frame = 0;
-            this.markedForDeletion = false;
         }
         draw() {
-            ctx.drawImage(this.image, this.frame * this.spriteWidth, 0, this.spriteWidth, this.spriteHeigth, this.x, this.y, this.game.stepx, this.game.stepy);
+            if(this.cell.width < 20 || this.cell.height < 20) {
+                ctx.save();
+                ctx.fillStyle = 'black';
+                ctx.fillRect(this.cell.x, this.cell.y, this.cell.width, this.cell.height);
+                ctx.restore();
+            } else{
+                ctx.drawImage(this.image, this.frame * this.spriteWidth, 0, this.spriteWidth, this.spriteHeigth, this.cell.x, this.cell.y, this.cell.width, this.cell.height);
+            }
         }
         update() {
             this.frame < 20 ? this.frame++ : this.frame = 0;
@@ -34,6 +39,19 @@ window.addEventListener('load', e => {
             this.height = this.game.stepy;
             this.color = 'lightgrey';
             this.robot = null;
+            this.populated = false;
+            this.populatedNeighbors = 0;
+        }
+        attachRobot() {
+            if(this.populated) return;
+            this.robot = new Robot(this);
+            this.populated = true;
+            this.game.robotCount++;
+        }
+        detachRobot() {
+            this.robot = null;
+            this.populated = false;
+            this.game.robotCount--;
         }
         draw() {
             ctx.save();
@@ -41,9 +59,9 @@ window.addEventListener('load', e => {
             ctx.strokeWidth = 0.5;
             ctx.strokeRect(this.x, this.y, this.width, this.height);
             ctx.restore();
-        }
-        addRobot(robot) {
-            this.robot = robot;
+            if(this.populated) {
+                this.robot.draw();
+            }
         }
     }
 
@@ -56,22 +74,19 @@ window.addEventListener('load', e => {
             this.stepx = stepx;
             this.stepy = stepy;
             this.cells = [];
-            this.robots = [];
             this.timer = 0;
-            this.interval = 50;
+            this.interval = 5;
             this.running = false;
+            this.robotCount = 0;
+            this.displayCells = true;
 
             //event listeners for the game
             canvas.addEventListener('click', e => {
                 let x = e.offsetX - (e.offsetX % this.stepx);
                 let y = e.offsetY - (e.offsetY % this.stepy);
                 let cell = this.cells.filter(cell => cell.x == x && cell.y == y);
-                console.log(cell);
-                if(this.robots.filter(robot => robot.x == x && robot.y == y).length == 0) {
-                    this.robots.push(new Robot(this, x, y));
-                    this.ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    this.draw();
-                }
+                cell[0].attachRobot();
+                cell[0].robot.draw();
             });
             document.getElementById('start').addEventListener('click', e => {
                 this.running = true;
@@ -87,77 +102,64 @@ window.addEventListener('load', e => {
         draw() {
             // draw the grid for the game
             this.cells.forEach(cell => {
-                cell.draw();
-            });
-            /*
-            this.ctx.strokeStyle = this.color;
-            this.ctx.lineWidth = 0.5;
-            for (let i = this.stepx + 0.5; i < this.ctx.canvas.width; i += this.stepx) {
-                this.ctx.beginPath();
-                this.ctx.moveTo(i, 0);
-                this.ctx.lineTo(i, this.ctx.canvas.height);
-                this.ctx.stroke();
-            }
-            for (let i = this.stepy + 0.5; i < this.ctx.canvas.height; i += this.stepy) {
-                this.ctx.beginPath();
-                this.ctx.moveTo(0, i);
-                this.ctx.lineTo(this.ctx.canvas.width, i);
-                this.ctx.stroke();
-            }*/
-
-            // draw the robots currently in the game
-            this.robots.forEach(robot => {
-                robot.draw();
-                robot.update();
+                if(this.displayCells) cell.draw();
+                if(cell.populated) {
+                    cell.robot.draw();
+                    cell.robot.update();
+                }
             });
         }
         runGeneration() {
-            // run the generation of robots
+            //run the generation of robots
+            this.findNeighbours();
             if(this.timer > this.interval) {
-                this.robots.forEach(robot => {
-                    this.findNeighbours(robot);
-                    if(robot.neighbours < 2 || robot.neighbours > 3) {
-                        robot.markedForDeletion = true;
-                    }
-                    if(robot.neighbours == 0) {
-                        robot.markedForDeletion = true;
+                this.cells.forEach(cell => {
+                    if(cell.populated) {
+                        if(cell.populatedNeighbors < 2 || cell.populatedNeighbors > 3) {
+                            cell.detachRobot();
+                        }
+                    } else {
+                        if(cell.populatedNeighbors == 3) {
+                            cell.attachRobot();
+                        }
                     }
                 });
-                this.robots = this.robots.filter(robot => !robot.markedForDeletion);
                 this.timer = 0;
             } else {
                 this.timer++;
             }
         }
-        findNeighbours(robot) {
-            // find the neighbours of each robot
-            let rx = robot.x;
-            let ry = robot.y;
-            this.robots.forEach(r => {
-                if(r.x == rx + this.stepx && r.y == ry) {
-                    robot.neighbours++;
-                } else if (r.x == rx - this.stepx && r.y == ry )
-                    robot.neighbours++;
-                else if (r.x == rx && r.y == ry + this.stepy)
-                    robot.neighbours++;
-                else if (r.x == rx && r.y == ry - this.stepy)
-                    robot.neighbours++;
-                else if (r.x == rx + this.stepx && r.y == ry + this.stepy)
-                    robot.neighbours++;
-                else if (r.x == rx - this.stepx && r.y == ry - this.stepy)
-                    robot.neighbours++;
-                else if (r.x == rx + this.stepx && r.y == ry - this.stepy)
-                    robot.neighbours++;
-                else if (r.x == rx - this.stepx && r.y == ry + this.stepy)
-                    robot.neighbours++;
+        findNeighbours() {
+            // find the count of populated neighbours for every cell
+            this.cells.forEach(cell => {
+                let x = cell.x;
+                let y = cell.y;
+                cell.populatedNeighbors = 0;
+                let neighboursArray = [];   
+                neighboursArray.push(this.cells.filter(cell => cell.x == x - this.stepx && cell.y == y - this.stepy));
+                neighboursArray.push(this.cells.filter(cell => cell.x == x && cell.y == y - this.stepy));
+                neighboursArray.push(this.cells.filter(cell => cell.x == x + this.stepx && cell.y == y - this.stepy));
+                neighboursArray.push(this.cells.filter(cell => cell.x == x - this.stepx && cell.y == y));
+                neighboursArray.push(this.cells.filter(cell => cell.x == x + this.stepx && cell.y == y));
+                neighboursArray.push(this.cells.filter(cell => cell.x == x - this.stepx && cell.y == y + this.stepy));
+                neighboursArray.push(this.cells.filter(cell => cell.x == x && cell.y == y + this.stepy));
+                neighboursArray.push(this.cells.filter(cell => cell.x == x + this.stepx && cell.y == y + this.stepy));
+                neighboursArray.forEach(neighbor => {
+                    if(neighbor.length > 0 && neighbor[0].populated) {
+                        cell.populatedNeighbors++;
+                    }
+                });
             });
         }
         randomPopulation() {
             // add random robots to the game
             for(let i = 1; i < 20; i++) {
-                let x = Math.floor(Math.random() * 50) * this.stepx;
-                let y = Math.floor(Math.random() * 25) * this.stepy;
-                this.robots.push(new Robot(this, x, y));
+                let randomizedWidth = Math.floor(Math.random() * this.width);
+                let randomizedHeight = Math.floor(Math.random() * this.height);
+                let x = randomizedWidth - (randomizedWidth % this.stepx);
+                let y = randomizedHeight - (randomizedHeight % this.stepy);
+                let cell = this.cells.filter(cell => cell.x == x && cell.y == y);
+                cell[0].attachRobot();
             };
         }
         init() {
@@ -169,7 +171,7 @@ window.addEventListener('load', e => {
             }
         }
         start(ctx) {
-            if(this.robots.length == 0) {
+            if(this.robotCount == 0) {
                  this.randomPopulation();
             }
             this.running = true;
@@ -179,6 +181,7 @@ window.addEventListener('load', e => {
                 this.draw();
                 if(this.running) {
                     document.getElementById('currentState').innerHTML = 'Running...';
+                    console.log(this.cells.filter(cell => cell.populated));
                     requestAnimationFrame(animate);
                 }
             }
@@ -190,11 +193,15 @@ window.addEventListener('load', e => {
         }
         clear() {
             this.stop();
-            this.robots = [];
+            this.ctx.clearRect(0, 0, canvas.width, canvas.height);
+            this.cells = [];
+            this.robotCount = 0;
+            this.init();
+            this.draw();
         }
     }
 
-    const game = new Game(ctx, 'lightgray', 100, 75);
+    const game = new Game(ctx, 'lightgray', 80, 80);
     game.init();
 
     let lastTime = 0;
@@ -202,7 +209,6 @@ window.addEventListener('load', e => {
         const deltaTime = timeStamp - lastTime;
         lastTime = timeStamp;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        document.getElementById('currentState').innerHTML = 'Waiting...';
         game.draw();
     }
 

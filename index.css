@@ -6,7 +6,8 @@
     background-color: aliceblue;
 
  /* add shadow to the canvas */
-    box-shadow: 0 0 10px 5px rgba(0, 0, 0, 0.2);    
+    box-shadow: 0 0 10px 5px rgba(0, 155, 0, 0.2);
+    border: 1px solid #c7e70d;
 }
 
 #robot {
